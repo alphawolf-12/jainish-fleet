@@ -13,3 +13,5 @@ export const stringifyQueryparams = payload => {
     let urlStringParams =  '?' + stringified.slice(0, -1);
     return urlStringParams;
 }
+
+export const baseURL = "https://picsum.photos/";

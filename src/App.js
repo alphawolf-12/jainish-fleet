@@ -1,6 +1,6 @@
 import React, {Fragment, PureComponent} from 'react';
 import queryString from 'query-string';
-import apis from './apis';
+import { fetchListOfImages }from './apis';
 
 import {history, stringifyQueryparams} from './utils';
 
@@ -21,17 +21,18 @@ class App extends PureComponent {
       page: stringParams.page ? isNaN(stringParams.page) ? 1 :  Math.abs (stringParams.page ): 1,
       limit: stringParams.limit ? isNaN(stringParams.limit) ? 30 :  Math.abs (stringParams.limit ) : 30,
       showRevealComponent : stringParams['reveal-image-id'] ? true : false,
-      revealImageID: stringParams['reveal-image-id'],
-      listOfImages: [],
+      revealImageId: stringParams['reveal-image-id'],
+      listOfImages: {},
       imagesFetchProgress: true,
     }
   }
 
   componentDidMount(){
-    const { page, limit } = this.state;
-    apis.fetchListOfImages({page, limit}).then( res => {
+    const { page, limit, listOfImages = {} } = this.state;
+    fetchListOfImages({page, limit}).then( res => {
+      listOfImages[page] = res.data;
       this.setState({
-        listOfImages : res.data, 
+        listOfImages : {...listOfImages}, 
         imagesFetchProgress: false, 
         imagesFetchError : false,
         imagesFetchErrorMsg: undefined
@@ -57,35 +58,47 @@ class App extends PureComponent {
   }
 
   hideReveal = ev => {
+    ev.preventDefault();
+    this.setState({showRevealComponent : false, revealImageId: undefined});
     let newStringParams = queryString.parse(window.location.search);
+    delete newStringParams['reveal-image-id'];
+    history.replace({
+      pathname : window.location.pathname,
+      search: stringifyQueryparams(newStringParams) 
+    });
+  }
+
+  handlePagination = page => {
+    const {listOfImages = []} = this.state;
+    this.setState({page, showRevealComponent: false});
+    let newStringParams = queryString.parse(window.location.search);
+    newStringParams['page'] = page;
+    newStringParams['limit'] = 30;
     delete newStringParams['reveal-image-id']
     history.replace({
       pathname : window.location.pathname,
       search: stringifyQueryparams(newStringParams) 
     });
-    ev.preventDefault();
-    this.setState({showRevealComponent : false, revealImageId: undefined});
-  }
+    if(!listOfImages[page]){
+      this.setState({imagesFetchProgress : true})
+      fetchListOfImages({page, limit: 30}).then(res => {
+        listOfImages[page] = res.data;
+        this.setState({  listOfImages : {...listOfImages}, imagesFetchProgress: false, imagesFetchError: false })
+      }).catch(err => {
+        this.setState({  imagesFetchProgress: false, imagesFetchError: true, imagesFetchError: JSON.stringify(err.message)  })
+      })
+    }
 
-  handlePagination = page => {
-    this.setState({page});
-    let newStringParams = queryString.parse(window.location.search);
-    newStringParams['page'] = page;
-    newStringParams['limit'] = 30;
-    history.replace({
-      pathname : window.location.pathname,
-      search: stringifyQueryparams(newStringParams) 
-    });
   }
   
   renderPage = () => {
-    const {listOfImages, showRevealComponent, revealImageId, page} = this.state;
-    let imageDetails =  revealImageId ?  listOfImages.filter( ele => ele.id == revealImageId)[0] : undefined; 
+    const {listOfImages = {}, showRevealComponent, revealImageId, page} = this.state;
+    let imageDetails =  revealImageId ?  listOfImages[page].filter( ele => ele.id == revealImageId)[0] : undefined; 
     return (
         <div className="page-settings">
           <div style={{width : showRevealComponent ? "72%" : "100%", display : "grid" }}>
             <div className="list-container"> 
-              {listOfImages.map( ele => <Card imageInFocus={this.imageInFocus} imageDetails={ele} /> )}
+              {(listOfImages[page] || []).map( ele => <Card imageInFocus={this.imageInFocus} imageDetails={ele} /> )}
             </div>
             <div style={{ display : "flex" , justifyContent :"center"}}> 
               <button className="pagination-icon" disabled={page ==1 } onClick={ev => {
@@ -102,7 +115,8 @@ class App extends PureComponent {
               </button>
             </div>
           </div>
-          <Reveal showRevealComponent={showRevealComponent} imageDetails = {imageDetails} hideReveal={this.hideReveal} />
+          {showRevealComponent &&   <Reveal imageDetails = {imageDetails} hideReveal={this.hideReveal} />}
+         
         </div>
       );
   }
@@ -111,7 +125,7 @@ class App extends PureComponent {
     const {imagesFetchProgress , imagesFetchError, imagesFetchErrorMsg  } = this.state;
     return (
       <div> 
-        {imagesFetchProgress && <div> {'Spinner'} </div>} 
+        {imagesFetchProgress && <div className="spinner--position">  <div className="spinner" /> </div> } 
         {!imagesFetchProgress && imagesFetchError && <Error errorMessage={imagesFetchErrorMsg} />}
         {!imagesFetchProgress && !imagesFetchError ? this.renderPage() : ''}
       </div>
