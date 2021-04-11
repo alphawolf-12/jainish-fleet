@@ -6,7 +6,7 @@ import {history, stringifyQueryparams} from './utils';
 
 import Card from './components/card';
 import Reveal from './components/reveal';
-import { Error } from './components/common';
+import { EmptyResult, Error } from './components/common';
 
 import NavigateNextIcon from '@material-ui/icons/NavigateNext';
 import NavigateBeforeIcon from '@material-ui/icons/NavigateBefore';
@@ -97,23 +97,28 @@ class App extends PureComponent {
     return (
         <div className="page-settings">
           <div style={{width : showRevealComponent ? "72%" : "100%", display : "grid" }}>
-            <div className="list-container"> 
-              {(listOfImages[page] || []).map( ele => <Card imageInFocus={this.imageInFocus} imageDetails={ele} /> )}
+           <Fragment>
+              {listOfImages[page].length > 0 ? 
+                <div className="list-container"> 
+                  {(listOfImages[page] || []).map( ele => <Card imageInFocus={this.imageInFocus} imageDetails={ele} /> )}
+                </div> 
+                : <EmptyResult />
+              }  
+              <div style={{ display : "flex" , justifyContent :"center"}}> 
+                <button className="pagination-icon" disabled={page ==1 } onClick={ev => {
+                  ev.preventDefault(); 
+                  this.handlePagination(page-1)
+                  }}>
+                  <NavigateBeforeIcon />
+                </button>
+                <button className="pagination-icon" onClick={ev => {
+                  ev.preventDefault(); 
+                  this.handlePagination(page+1)
+                  }}>
+                  <NavigateNextIcon />
+                </button>
             </div>
-            <div style={{ display : "flex" , justifyContent :"center"}}> 
-              <button className="pagination-icon" disabled={page ==1 } onClick={ev => {
-                ev.preventDefault(); 
-                this.handlePagination(page-1)
-                }}>
-                <NavigateBeforeIcon />
-              </button>
-              <button className="pagination-icon" onClick={ev => {
-                ev.preventDefault(); 
-                this.handlePagination(page+1)
-                }}>
-                <NavigateNextIcon />
-              </button>
-            </div>
+              </Fragment>
           </div>
           {showRevealComponent &&   <Reveal imageDetails = {imageDetails} hideReveal={this.hideReveal} />}
          

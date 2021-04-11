@@ -101,3 +101,12 @@
   cursor: pointer;
   border: none;
 }
+
+.empty--title{
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.empty--message{
+  color: grey;
+}
