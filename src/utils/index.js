@@ -1,3 +1,8 @@
+import { createBrowserHistory } from 'history';
+
+export const history = createBrowserHistory({basename : '/' });
+
+
 export const stringifyQueryparams = payload => {
     let stringified = Object.keys(payload).reduce( 
         (acc, ele) =>  { 
