@@ -5,7 +5,8 @@ Steps to Run
   
 2. Clone the repo
 3. goto project dir
-4. run "npm start"
+4. run "npm i"
+5. run "npm start"
 
 
    
